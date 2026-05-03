@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>mhmdrynhaqqi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono&display=swap');
 
         :root {
             --bg-dark: #020617;
-            --card-bg: #0f172a;
+            --card-bg: rgba(15, 23, 42, 0.7);
             --neon-blue: #38bdf8;
             --neon-purple: #c084fc;
             --neon-green: #10b981;
@@ -22,213 +23,328 @@
             font-family: 'Space Grotesk', sans-serif;
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.08) 0%, transparent 30%),
-                radial-gradient(circle at 90% 90%, rgba(192, 132, 252, 0.08) 0%, transparent 30%);
+                radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(192, 132, 252, 0.1) 0%, transparent 40%);
             color: var(--text-primary);
             margin: 0; padding: 40px 20px; min-height: 100vh;
         }
 
         .container {
             max-width: 900px; margin: 0 auto;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px); padding: 40px;
-            border-radius: 28px; border: 1px solid var(--border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            background: var(--card-bg);
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px);
+            padding: 40px; border-radius: 28px; 
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
         }
 
         .header { text-align: center; margin-bottom: 40px; }
         .header h1 { 
-            font-size: 2.5rem; 
+            font-size: 2.8rem; letter-spacing: -1px;
             background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin: 0; 
         }
 
+        #loadingOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.95); z-index: 9999;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loading-box { width: 300px; text-align: center; }
+        .progress-bar {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 10px; overflow: hidden; margin: 20px 0;
+        }
+        .progress-fill {
+            width: 0%; height: 100%; background: var(--neon-blue);
+            transition: width 0.3s linear; box-shadow: 0 0 15px var(--neon-blue);
+        }
+        .loading-status { font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--neon-blue); }
+
+        #igModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #1e293b; padding: 30px; border-radius: 20px; text-align: center;
+            border: 1px solid var(--neon-purple); box-shadow: 0 0 30px rgba(192, 132, 252, 0.3);
+            max-width: 350px;
+        }
+        .modal-content h2 { margin-top: 0; color: var(--neon-purple); }
+        .modal-content p { color: var(--text-secondary); margin-bottom: 25px; }
+        .btn-ok {
+            background: var(--neon-purple); color: white; border: none; padding: 12px 40px;
+            border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%;
+        }
+
         .input-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
         label { font-size: 0.7rem; color: var(--neon-blue); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        
-        textarea {
-            width: 100%; height: 100px; background: #020617; border: 1px solid var(--border);
-            border-radius: 16px; color: var(--text-primary); padding: 15px;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; box-sizing: border-box;
+        textarea, input {
+            width: 100%; background: rgba(2, 6, 23, 0.8); border: 1px solid var(--border);
+            border-radius: 12px; color: var(--text-primary); padding: 15px;
+            font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
         }
-
-        button {
+        button.main-btn {
             width: 100%; padding: 20px; background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             color: white; border: none; border-radius: 16px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 3px; cursor: pointer; transition: 0.4s;
+            text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
         }
 
-        /* --- LOADING OVERLAY --- */
-        #loadingOverlay {
-            display: none; text-align: center; margin-top: 30px;
-        }
-
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid rgba(56, 189, 248, 0.1);
-            border-top: 5px solid var(--neon-blue); border-radius: 50%;
-            animation: spin 1s linear infinite; margin: 0 auto 20px;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .ig-promo {
-            font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
-            color: var(--neon-purple); animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        /* --- RESULTS --- */
-        .results { display: none; margin-top: 50px; animation: slideUp 0.6s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        .grid-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
-        .stat-card span { font-size: 0.55rem; color: var(--text-secondary); text-transform: uppercase; display: block; margin-bottom: 5px; }
-        .stat-card div { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--text-primary); }
+        .results { display: none; margin-top: 50px; }
+        .step-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 25px; border-radius: 24px; margin-bottom: 30px; }
+        .step-title { color: var(--neon-blue); font-size: 0.75rem; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; }
+        .formula { background: #020617; padding: 18px; border-radius: 12px; color: #fff; font-family: 'JetBrains Mono', monospace; margin: 12px 0; border-left: 3px solid var(--neon-purple); line-height: 1.6; }
+        .highlight { color: var(--neon-green); font-weight: bold; }
         
-        .highlight-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .highlight-box { padding: 25px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05); text-align: center; }
-        .highlight-box.purple { border-color: rgba(192, 132, 252, 0.2); background: rgba(192, 132, 252, 0.05); }
-        .highlight-box .val { font-size: 2rem; font-family: 'JetBrains Mono', monospace; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-family: 'JetBrains Mono'; font-size: 0.8rem; }
+        table th { color: var(--neon-purple); border-bottom: 1px solid var(--border); padding: 10px; }
+        table td { padding: 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        
+        .chart-wrapper { background: white; border-radius: 20px; padding: 20px; }
+        #finalEq { font-size: 2rem; text-align: center; font-family: 'JetBrains Mono'; color: var(--neon-blue); padding: 25px; background: rgba(0,0,0,0.2); border-radius: 20px; }
+        .summary-card { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 15px; color: var(--text-secondary); line-height: 1.6; }
 
-        .equation-bar { background: #020617; padding: 30px; border-radius: 20px; border-left: 4px solid var(--neon-blue); text-align: center; margin-bottom: 30px; }
-        .equation-bar div { font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; }
+        .predict-box { margin-top: 15px; display: flex; gap: 10px; align-items: center; }
+        .predict-box input { width: 120px; padding: 10px; text-align: center; }
 
-        .analysis-section { background: rgba(255,255,255,0.02); padding: 30px; border-radius: 24px; border: 1px solid var(--border); }
-        .analysis-text { font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); }
-
-        @media (max-width: 650px) { .input-section, .grid-stats, .highlight-container { grid-template-columns: 1fr; } .grid-stats { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 650px) { .input-section { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
+<div id="loadingOverlay">
+    <div class="loading-box">
+        <div class="loading-status" id="loadMsg">Menghubungkan ke Server...</div>
+        <div class="progress-bar"><div id="pFill" class="progress-fill"></div></div>
+        <div class="loading-status" id="pPercent">0%</div>
+    </div>
+</div>
+
+<div id="igModal">
+    <div class="modal-content">
+        <h2>Berhasil!</h2>
+        <p>Data telah diproses oleh sistem. Silakan follow IG Creator untuk melihat hasilnya: <b>@mhmdrynhaqqi</b></p>
+        <button class="btn-ok" onclick="showResults()">Tampilkan Hasil</button>
+    </div>
+</div>
+
 <div class="container">
     <div class="header">
-        <h1>STATS CORE V5.1</h1>
-        <p>made by @mhmdrynhaqqi</p>
+        <h1>HAHAHAHAHAHAHA</h1>
+        <p style="opacity: 0.6; font-size: 0.9rem;">created by @mhmdrynhaqqi</p>
+        <p style="opacity: 0.3; font-size: 0.6rem;">gunakan secara bijak, creator tidak bertanggung jawab atas penyalahgunaan !</p>
     </div>
 
     <div class="input-section">
-        <div><label>Data Variabel X</label><textarea id="inX" placeholder="2, 3, 4, 5..."></textarea></div>
-        <div><label>Data Variabel Y</label><textarea id="inY" placeholder="55, 60, 65, 70..."></textarea></div>
+        <div><label>Data Variabel X</label><textarea id="inX" placeholder="Contoh: 1 2 3"></textarea></div>
+        <div><label>Data Variabel Y</label><textarea id="inY" placeholder="Contoh: 10 20 30"></textarea></div>
     </div>
 
-    <button id="btnCalc" onclick="startProcess()">Jalankan Analisis Data</button>
-
-    <div id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="ig-promo">MENGHITUNG MATRIKS...</div>
-        <div style="margin-top: 10px; color: var(--text-secondary); font-size: 0.8rem;">
-            Follow Instagram: <span style="color: white; font-weight: bold;">@mhmdrynhaqqi</span>
-        </div>
-    </div>
+    <button class="main-btn" onclick="startProcess()">Analisis Data</button>
 
     <div id="res" class="results">
-        <div class="grid-stats">
-            <div class="stat-card"><span>Sampel (n)</span><div id="oN"></div></div>
-            <div class="stat-card"><span>SSxx</span><div id="oSSxx"></div></div>
-            <div class="stat-card"><span>SSxy</span><div id="oSSxy"></div></div>
-            <div class="stat-card"><span>SSyy</span><div id="oSSyy"></div></div>
-            <div class="stat-card" style="background: rgba(192, 132, 252, 0.1);"><span>Korelasi (r)</span><div id="oR" style="color: var(--neon-purple); font-weight: bold;"></div></div>
-            <div class="stat-card" style="background: rgba(56, 189, 248, 0.1);"><span>Determinasi (R²)</span><div id="oR2" style="color: var(--neon-blue); font-weight: bold;"></div></div>
+        <div class="step-box">
+            <div class="step-title">Visualisasi: Diagram Linear</div>
+            <div class="chart-wrapper"><canvas id="regChart"></canvas></div>
         </div>
 
-        <div class="highlight-container">
-            <div class="highlight-box">
-                <div style="font-size: 0.7rem; color: var(--neon-green); letter-spacing: 1px;">INTERSEP (a)</div>
-                <div class="val" id="oA"></div>
+        <div class="step-box">
+            <div class="step-title">Langkah 1: Tabel Penolong</div>
+            <div id="outTable"></div>
+        </div>
+
+        <div class="step-box">
+            <div class="step-title">Langkah 2: Sum of Squares (Rincian Sangat Detail)</div>
+            <div id="outSS"></div>
+        </div>
+
+        <div class="step-box">
+            <div class="step-title">Langkah 3: Perhitungan Koefisien a & b</div>
+            <div id="outAB"></div>
+        </div>
+
+        <div class="step-box">
+            <div class="step-title">Langkah 4: Analisis Korelasi & Determinasi (KD)</div>
+            <div id="outAnalysis"></div>
+        </div>
+
+        <div class="step-box" style="background: rgba(56, 189, 248, 0.03); border: 1px solid var(--neon-blue);">
+            <div class="step-title" style="color: var(--neon-blue); text-align: center;">Persamaan Regresi & Prediksi</div>
+            <div id="finalEq"></div>
+            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+                <label>Prediksi Nilai Y: Masukkan Nilai X</label>
+                <div class="predict-box">
+                    <input type="number" id="predX" placeholder="Nilai X" oninput="predictY()">
+                    <span style="font-size: 1.5rem;">➞</span>
+                    <div id="predResult" style="font-family: 'JetBrains Mono'; color: var(--neon-green); font-size: 1.5rem; font-weight: bold;">ŷ = ...</div>
+                </div>
             </div>
-            <div class="highlight-box purple">
-                <div style="font-size: 0.7rem; color: var(--neon-purple); letter-spacing: 1px;">KEMIRINGAN (b)</div>
-                <div class="val" id="oB"></div>
-            </div>
-        </div>
-
-        <div class="equation-bar">
-            <span style="font-size: 0.7rem; color: var(--neon-blue); letter-spacing: 3px;">PERSAMAAN REGRESI</span>
-            <div id="oTopi"></div>
-        </div>
-
-        <div class="analysis-section">
-            <h2 style="font-size: 1.1rem; color: var(--neon-blue);">LAPORAN KESIMPULAN AI</h2>
-            <div class="analysis-text" id="oAnalysis"></div>
         </div>
     </div>
 </div>
 
 <script>
-    const f = (n) => Number(n.toFixed(4));
+    const fmt = (n) => Number(n.toFixed(4));
+    let chartInstance = null;
+    let currentA = 0, currentB = 0;
 
     function startProcess() {
-        const x = document.getElementById('inX').value.trim();
-        const y = document.getElementById('inY').value.trim();
+        const valX = document.getElementById('inX').value.trim();
+        const valY = document.getElementById('inY').value.trim();
+        if (!valX || !valY) return alert("Harap isi data terlebih dahulu!");
 
-        if (!x || !y) {
-            alert("Harap masukkan data terlebih dahulu!");
-            return;
-        }
-
+        const overlay = document.getElementById('loadingOverlay');
+        const pFill = document.getElementById('pFill');
+        const pPerc = document.getElementById('pPercent');
+        const loadMsg = document.getElementById('loadMsg');
+        
+        overlay.style.display = 'flex';
         document.getElementById('res').style.display = 'none';
-        document.getElementById('btnCalc').style.display = 'none';
-        document.getElementById('loadingOverlay').style.display = 'block';
 
-        setTimeout(() => {
-            calculateLogic();
-            document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('btnCalc').style.display = 'block';
-            document.getElementById('res').style.display = 'block';
-        }, 5000);
+        let progress = 0;
+        const messages = ["Menginisialisasi...", "Menghitung Sigma...", "Mengkalkulasi Matriks...", "Finalisasi Perhitungan..."];
+        
+        const interval = setInterval(() => {
+            progress += 1;
+            pFill.style.width = progress + "%";
+            pPerc.innerText = progress + "%";
+            if(progress === 25) loadMsg.innerText = messages[1];
+            if(progress === 50) loadMsg.innerText = messages[2];
+            if(progress === 80) loadMsg.innerText = messages[3];
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                document.getElementById('igModal').style.display = 'flex';
+                calculateStats();
+            }
+        }, 100);
     }
 
-    function calculateLogic() {
-        const xArr = document.getElementById('inX').value.trim().split(/[\s,]+/).map(Number).filter(v => !isNaN(v));
-        const yArr = document.getElementById('inY').value.trim().split(/[\s,]+/).map(Number).filter(v => !isNaN(v));
+    function showResults() {
+        document.getElementById('igModal').style.display = 'none';
+        document.getElementById('res').style.display = 'block';
+    }
 
+    function calculateStats() {
+        const xArr = document.getElementById('inX').value.split(/[\s,]+/).map(Number).filter(v => !isNaN(v));
+        const yArr = document.getElementById('inY').value.split(/[\s,]+/).map(Number).filter(v => !isNaN(v));
         const n = xArr.length;
-        let sx=0, sy=0, sx2=0, sy2=0, sxy=0;
-        xArr.forEach((v, i) => {
-            sx += v; sy += yArr[i];
-            sx2 += v**2; sy2 += yArr[i]**2;
-            sxy += v*yArr[i];
+
+        let sx=0, sy=0, sx2=0, sy2=0, sxy=0, rows="";
+        xArr.forEach((x, i) => {
+            const y = yArr[i];
+            sx += x; sy += y; sx2 += x**2; sy2 += y**2; sxy += x*y;
+            rows += `<tr><td>${x}</td><td>${y}</td><td>${x**2}</td><td>${y**2}</td><td>${x*y}</td></tr>`;
         });
 
-        const ssxx = sx2 - (sx**2/n);
-        const ssyy = sy2 - (sy**2/n);
-        const ssxy = sxy - (sx*sy/n);
+        document.getElementById('outTable').innerHTML = `<table><thead><tr><th>X</th><th>Y</th><th>X²</th><th>Y²</th><th>XY</th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="color:var(--neon-green);"><td>ΣX: ${sx}</td><td>ΣY: ${sy}</td><td>ΣX²: ${sx2}</td><td>ΣY²: ${sy2}</td><td>ΣXY: ${sxy}</td></tr></tfoot></table>`;
+
+        const sxSq = sx**2;
+        const sySq = sy**2;
+        const ssxx = sx2 - (sxSq / n);
+        const ssxy = sxy - (sx * sy / n);
+        const ssyy = sy2 - (sySq / n);
+
+        document.getElementById('outSS').innerHTML = `
+            <div class="formula">
+                <b>1. Perhitungan SSxx (Variansi X)</b><br>
+                Rumus: ΣX² - (ΣX)² / n<br>
+                = ${sx2} - (${sx})² / ${n}<br>
+                = ${sx2} - ${sxSq} / ${n}<br>
+                = ${sx2} - ${fmt(sxSq/n)} = <span class="highlight">${fmt(ssxx)}</span>
+            </div>
+            <div class="formula">
+                <b>2. Perhitungan SSxy (Kovariansi)</b><br>
+                Rumus: ΣXY - (ΣX · ΣY) / n<br>
+                = ${sxy} - (${sx} · ${sy}) / ${n}<br>
+                = ${sxy} - ${sx * sy} / ${n}<br>
+                = ${sxy} - ${fmt((sx*sy)/n)} = <span class="highlight">${fmt(ssxy)}</span>
+            </div>
+            <div class="formula">
+                <b>3. Perhitungan SSyy (Variansi Y)</b><br>
+                Rumus: ΣY² - (ΣY)² / n<br>
+                = ${sy2} - (${sy})² / ${n}<br>
+                = ${sy2} - ${sySq} / ${n}<br>
+                = ${sy2} - ${fmt(sySq/n)} = <span class="highlight">${fmt(ssyy)}</span>
+            </div>`;
+
+        currentB = ssxy / ssxx;
+        currentA = (sy - (currentB * sx)) / n;
         
-        const b = ssxy / ssxx;
-        const a = (sy/n) - (b * (sx/n));
+        document.getElementById('outAB').innerHTML = `
+            <div class="formula">
+                <b>Koefisien b (Slope):</b><br>
+                b = SSxy / SSxx = ${fmt(ssxy)} / ${fmt(ssxx)} = <span class="highlight">${fmt(currentB)}</span>
+            </div>
+            <div class="formula">
+                <b>Koefisien a (Intercept):</b><br>
+                a = (ΣY - b · ΣX) / n<br>
+                = (${sy} - (${fmt(currentB)} · ${sx})) / ${n}<br>
+                = (${sy} - ${fmt(currentB * sx)}) / ${n} = <span class="highlight">${fmt(currentA)}</span>
+            </div>`;
+
         const r = ssxy / Math.sqrt(ssxx * ssyy);
-        const r2 = r**2;
-
-        document.getElementById('oN').innerText = n;
-        document.getElementById('oSSxx').innerText = f(ssxx);
-        document.getElementById('oSSxy').innerText = f(ssxy);
-        document.getElementById('oSSyy').innerText = f(ssyy);
-        document.getElementById('oA').innerText = f(a);
-        document.getElementById('oB').innerText = f(b);
-        document.getElementById('oR').innerText = f(r);
-        document.getElementById('oR2').innerText = f(r2);
-        document.getElementById('oTopi').innerText = `ŷ = ${f(a)} + (${f(b)})x`;
-
-        let kekuatan = "";
-        const absR = Math.abs(r);
-        if (absR >= 0.8) kekuatan = "Sangat Kuat";
-        else if (absR >= 0.6) kekuatan = "Kuat";
-        else if (absR >= 0.4) kekuatan = "Cukup Kuat";
-        else kekuatan = "Lemah";
+        const rSq = r**2;
+        const kd = rSq * 100;
         
-        document.getElementById('oAnalysis').innerHTML = `
-            Analisis selesai. Ditemukan koefisien korelasi <b>r = ${f(r)}</b> yang menunjukkan hubungan <b>${r > 0 ? 'Positif' : 'Negatif'}</b> 
-            dengan tingkat kekuatan <b>${kekuatan}</b>.<br><br>
-            
-            Koefisien Determinasi <b>R² = ${f(r2)}</b> (${(r2 * 100).toFixed(2)}%) mengindikasikan bahwa <b>${(r2 * 100).toFixed(2)}%</b> variasi variabel Y dapat dijelaskan oleh variabel X dalam model ini. 
-            Sisa <b>${(100 - (r2 * 100)).toFixed(2)}%</b> dijelaskan oleh variabel lain di luar penelitian.
-        `;
+        let kriteria = "Sangat Lemah";
+        const absR = Math.abs(r);
+        if(absR > 0.8) kriteria = "Sangat Kuat";
+        else if(absR > 0.6) kriteria = "Kuat";
+        else if(absR > 0.4) kriteria = "Sedang";
+        else if(absR > 0.2) kriteria = "Lemah";
+
+        document.getElementById('outAnalysis').innerHTML = `
+            <div class="summary-card">
+                <b>Langkah Perhitungan KD:</b><br>
+                1. Hitung r: SSxy / √(SSxx · SSyy)<br>
+                &nbsp;&nbsp; = ${fmt(ssxy)} / √(${fmt(ssxx)} · ${fmt(ssyy)})<br>
+                &nbsp;&nbsp; = ${fmt(ssxy)} / √(${fmt(ssxx * ssyy)}) = <span class="highlight">${fmt(r)}</span><br>
+                2. Hitung r²: ${fmt(r)}² = <span class="highlight">${fmt(rSq)}</span><br>
+                3. Hitung KD: ${fmt(rSq)} × 100% = <span class="highlight">${fmt(kd)}%</span>
+                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+                <b>Kesimpulan:</b><br>
+                • Hubungan X & Y bersifat <b>${currentB > 0 ? 'Positif' : 'Negatif'}</b> dengan kriteria <b>${kriteria}</b>.<br>
+                • <b>Interferensi a:</b> Jika X nol, maka Y bernilai ${fmt(currentA)}.<br>
+                • <b>Interferensi b:</b> Setiap kenaikan 1 unit X, Y akan ${currentB > 0 ? 'naik' : 'turun'} ${Math.abs(fmt(currentB))}.
+            </div>`;
+
+        document.getElementById('finalEq').innerText = `ŷ = ${fmt(currentA)} + (${fmt(currentB)})x`;
+        drawChart(xArr, yArr, currentA, currentB);
+        predictY();
+    }
+
+    function predictY() {
+        const x = parseFloat(document.getElementById('predX').value);
+        if(isNaN(x)) {
+            document.getElementById('predResult').innerText = "ŷ = ...";
+            return;
+        }
+        const result = currentA + (currentB * x);
+        document.getElementById('predResult').innerText = `ŷ = ${fmt(result)}`;
+    }
+
+    function drawChart(xData, yData, a, b) {
+        const ctx = document.getElementById('regChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            data: {
+                datasets: [{
+                    type: 'scatter', label: 'Titik Data',
+                    data: xData.map((x, i) => ({ x: x, y: yData[i] })),
+                    backgroundColor: '#c084fc'
+                }, {
+                    type: 'line', label: 'Garis Regresi',
+                    data: [{ x: Math.min(...xData), y: a+(b*Math.min(...xData)) }, { x: Math.max(...xData), y: a+(b*Math.max(...xData)) }],
+                    borderColor: '#38bdf8', pointRadius: 0, borderWidth: 3
+                }]
+            },
+            options: { responsive: true }
+        });
     }
 </script>
-
 </body>
 </html>
